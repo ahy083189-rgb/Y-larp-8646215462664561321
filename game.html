@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>公主失蹤案</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#14101a;color:#f5eeda;font-family:system-ui;padding:14px;line-height:1.7}
+.wrap{max-width:680px;margin:0 auto}h1{text-align:center}
+.card{background:#221b2e;border:1px solid #6b5a2a;border-radius:14px;padding:14px;margin-bottom:10px}
+.tag{display:inline-block;background:#d4af37;color:#1a1405;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.step{background:#d4af37;color:#000;padding:8px 12px;border-radius:10px;font-weight:700;margin-bottom:10px}
+.story{background:#1a1426;border:1px solid #444;border-radius:12px;padding:12px;margin:8px 0}
+.story h3{margin:4px 0;color:#d4af37}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #555;background:#1a1426;color:#fff;margin:6px 0;font-size:16px;text-align:center}
+button{border:0;border-radius:12px;padding:14px;font-weight:700;cursor:pointer;background:#f5eeda;width:100%;margin:4px 0;font-size:15px}
+button.gold{background:#d4af37}button:disabled{opacity:.35}
+button.outline{background:transparent;color:#f5eeda;border:1px solid #888}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.clue{border-left:3px solid #d4af37;padding-left:10px;margin:8px 0}
+#chat{height:160px;overflow-y:auto;background:#0f0b16;border-radius:10px;padding:10px}
+.small{font-size:12px;color:#aaa}.hidden{display:none}
+.suspect{border:1px solid #6b5a2a;border-radius:10px;padding:10px;text-align:center}
+.suspect.sel{background:#d4af37;color:#000}
+.top{position:sticky;top:0;background:#14101a;padding:8px 0;text-align:center;color:#d4af37}
+.timeline{border-left:3px solid #d4af37;padding-left:12px;margin:8px 0}
+.topbar{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.topbar button{width:auto;padding:8px 12px;font-size:13px;margin:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="topbar"><button class="outline" id="btnHomeTop">← 返回主頁</button><span style="color:#d4af37;font-weight:700">公主失蹤案</span><button class="outline" id="btnHomeTop2">重開</button></div>
+<h1>公主失蹤案</h1>
+<div id="topBar" class="top hidden">房號：<b id="topRoom"></b> · 你係：<b id="topMe">未揀角</b></div>
+
+<div class="card" id="step0">
+<div class="step">第0步 · 你係邊個？</div>
+<button class="gold" id="btnShowHost">我是Host · 開新房</button>
+<button id="btnShowJoin">我是朋友 · 入房</button>
+<div id="hostBox" class="hidden"><p>諗一個4位數，例如 7391</p><input id="hostCode" placeholder="自訂4位數，例如 7391" maxlength="4"><button class="gold" id="btnCreate">開房！</button></div>
+<div id="joinBox" class="hidden"><p>問Host攞佢嗰4位數</p><input id="roomInput" placeholder="打Host嗰4位數" maxlength="4"><button class="gold" id="btnJoin">入房！</button></div>
+<p id="roomInfo" class="small"></p><p id="debug" class="small" style="color:#ff9a9a"></p>
+<button class="outline" id="btnHome">← 返回主頁 / 重開</button>
+</div>
+
+<div class="card hidden" id="step2">
+<div class="step">第1步 · 揀角 · 撳完即鎖，全場即刻見到</div>
+<div class="grid">
+<button id="btn-小福子">小福子</button>
+<button id="btn-將軍">將軍</button>
+<button id="btn-尚書">尚書</button>
+<button id="btn-舞姬">舞姬</button>
+</div>
+<p id="lockInfo" class="small"></p>
+<div id="myRole" class="card hidden" style="background:#1a1426;margin:0">
+<span class="tag">私密 · 淨係你睇到</span><h2 id="roleTitle"></h2>
+<div class="story"><h3>一 · 發生咩事？</h3><p id="storyIntro"></p></div>
+<div class="story"><h3>二 · 你嗰晚見到咩？</h3><p id="roleSeen"></p></div>
+<div class="story"><h3>三 · 你嘅時間線</h3><div class="timeline" id="roleTimeline"></div><p id="roleSecret" style="color:#d4af37;font-weight:700"></p></div>
+</div>
+<button class="outline" id="btnHome2">← 返回主頁</button>
+</div>
+
+<div class="card hidden" id="step3"><div class="step">第2步 · 查案</div><div style="display:flex;gap:8px"><input id="searchInput" placeholder="例如：查 涼亭" style="text-align:left"><button id="btnSearch" style="width:90px" class="gold">查！</button></div><p class="small">涼亭 / 假山 / 寢宮 / 門口 / 冷宮 / 御書房</p><div id="clues"></div></div>
+<div class="card hidden" id="step4"><div class="step">第3步 · 傾計</div><div id="chat"></div><div style="display:flex;gap:8px"><input id="chatInput" placeholder="講嘢..." style="text-align:left"><button id="btnChat" style="width:80px">Send</button></div></div>
+<div class="card hidden" id="step5"><div class="step">第4步 · 指兇手</div><div class="grid" id="suspects"></div><button class="gold" id="btnVote">鎖定指認</button><p id="voteResult" class="small"></p><button id="btnReveal">Host開真相</button><div id="truth" class="hidden"></div><button class="outline" id="btnHome3">← 返回主頁 · 玩多局</button></div>
+</div>
+
+<script>
+var peer=null, conns=[], isHost=false, roomId="", roomCode="", myRole="", myName="", culprit="", lockedRoles={};
+var suspects=["將軍","尚書","舞姬","宮女","嬤嬤","駙馬"];
+var storyIntro="今晚本來係宮入面最熱鬧嘅中秋夜，皇上喺御花園設宴，話要親自宣布公主嘅婚事。點知宴會去到一半，公主突然話頭痛，想返涼亭唞下，之後就再冇返過嚟。宮女去涼亭搵，只見到一隻斷咗嘅耳環同埋一杯仲暖嘅茶，人就唔見咗。皇上大怒，封晒成個御花園，限今晚之內要搵返公主，否則成晚當值嘅人全部要受罰。大家表面話幫手搵，其實人人都有嘢收收埋埋。";
+var roles={};
+roles["小福子"]={title:"小福子 · 貼身太監",seen:"你係跟咗公主十年嘅貼身太監，今晚你一直喺宴會隔離斟茶遞水，成晚都好留意公主嘅面色。你見到公主聽到皇上話要將佢嫁去遠方和親嗰陣，成個人即刻白晒，隻手震到連茶杯都拎唔穩。你仲見到尚書成晚喺皇上耳邊講嘢，舞姬又成晚喺門口跳舞，好似特登引開啲守衛。你心入面已經估到，公主今晚唔係俾人捉走，而係自己唔想嫁，搵機會走咗。但你唔敢講，因為你見到有人喺涼亭附近徘徊。",timeline:"19:00 見公主入御花園，面色好差<br>19:20 喺宴會斟茶，見到尚書同皇上密斟<br>19:30 聽到舞姬喺門口跳舞，守衛走晒去睇<br>20:00 送茶去涼亭，發現涼亭已經冇人",secret:"得你知：你見到尚書叫守衛走開，你唔敢講，驚俾人滅口。"};
+roles["將軍"]={title:"將軍 · 禁軍統領",seen:"你係今晚負責成個御花園安全嘅將軍，成晚都企喺偏殿門口，雙眼唔敢離開公主半步。你見到公主成晚都心不在焉，成日望住門口，好似諗緊點樣走。你仲見到舞姬喺門口跳舞跳到好誇張，啲守衛全部俾佢吸引晒，門口空晒。你心諗唔對路，即刻走過去想勸公主唔好做傻事，點知你去到門口嗰陣，公主已經唔見咗，只見到舞姬喺假山後面一閃而過，好似有啲嘢唔想俾你見到。",timeline:"19:10 喺偏殿等召見，守住門口<br>19:30 見到舞姬喺門口跳舞，守衛走晒<br>19:40 去門口想勸公主唔好走<br>19:45 見到舞姬喺假山後面閃過",secret:"得你知：你去門口係想勸公主，唔係捉佢，千祈唔好俾人屈你。"};
+roles["尚書"]={title:"尚書 · 禮部尚書",seen:"你係今日一手促成和親嘅禮部尚書，成晚都跟住皇上，負責宣布公主聽日就要嫁去遠方。你見到公主聽到消息之後，眼淚即刻湧出嚟，之後就話頭痛要去涼亭唞下。你心入面有啲內疚，因為你知道公主根本唔想嫁，但皇命難違。你仲記得，下午有個神秘人塞咗張紙俾你，叫你今晚一定要叫開門口嘅守衛，話係為咗公主好。你當時唔知咩事，照做咗，而家諗返先知自己可能俾人利用咗。",timeline:"19:15 送奏摺去御書房，見到和親聖旨<br>19:30 叫守衛去偏殿搬嘢，門口空咗一炷香<br>19:40 返到宴會，見到公主唔見咗<br>19:50 返到自己房，心神不寧",secret:"得你知：你叫開守衛，係有人叫你咁做，你唔知為咩，驚俾人當係同謀。"};
+roles["舞姬"]={title:"舞姬 · 西域舞姬",seen:"你係今晚俾人請嚟表演嘅西域舞姬，平時喺宮外賣藝，今晚突然有人俾咗你成袋銀兩，叫你今晚一定要喺門口跳舞跳到最勁，引開晒啲守衛。你本來諗住有錢收就照做，點知你跳舞嗰陣，見到公主喺涼亭嗰邊偷偷換咗套宮女衫，仲同一個宮女一齊向假山方向走去。你仲見到將軍向你呢邊行緊過嚟，你嚇到即刻閃去假山後面，唔敢出聲。你而家唔知自己係幫咗公主定害咗佢。",timeline:"19:00 收咗一袋銀兩，叫你喺門口跳舞<br>19:30 喺門口跳舞，守衛全部走晒嚟睇<br>19:38 見到公主換咗宮女衫，向假山走<br>19:40 閃去假山後面，避開將軍",secret:"得你知：你收錢跳舞，有人叫你引開守衛，你唔知嗰個人係邊個。"};
+var locations={};
+locations["涼亭"]=["茶杯仲暖，但冇藥，係公主自己飲剩嘅。","耳環斷口好整齊，似人用手整斷。","石櫈下面塞住紙仔：今晚戌時三刻，假山見"];
+locations["假山"]=["假山石有新刮痕，啱啱俾人推開過。","地下有兩個女仔腳印，一入冇出。","有個爛香囊，係舞姬成日戴嗰個款。"];
+locations["寢宮"]=["床頭櫃空咗，唔見咗小包袱。","衣櫃少咗一套宮女衫。","梳妝枱有信：唔好搵我，我要自己揀路"];
+locations["門口"]=["守衛話尚書叫佢哋去搬嘢，門口空咗一炷香。","地下有舞姬用開嘅香水味。","將軍話嚟勸公主，嚟到已經唔見人。"];
+locations["冷宮"]=["冷宮小屋張床仲暖，好似啱啱有人瞓過。","枱面有公主鍾意食嘅糕點。","門後面有個小包袱，同寢宮唔見咗嗰個一樣。"];
+locations["御書房"]=["御書房有張和親聖旨，公主聽日就要嫁去遠方。","聖旨下面壓住公主寫嘅不嫁兩個字。","尚書今日嚟過御書房，逗留咗好耐。"];
+function show(id){document.getElementById(id).classList.remove("hidden");}
+function hide(id){document.getElementById(id).classList.add("hidden");}
+function log(t){document.getElementById("debug").textContent=t;}
+function addChat(w,m){var c=document.getElementById("chat");if(!c)return;c.innerHTML=c.innerHTML+"<div><b>"+w+":</b> "+m+"</div>";c.scrollTop=c.scrollHeight;}
+function broadcast(o){for(var i=0;i<conns.length;i++){try{conns[i].send(o);}catch(e){}}}
+function afterEnterRoom(){hide("step0");show("step2");document.getElementById("topBar").classList.remove("hidden");document.getElementById("topRoom").textContent=roomCode;}
+function applyLockedRoles(){
+var keys=Object.keys(lockedRoles);
+for(var i=0;i<keys.length;i++){var r=keys[i];if(myRole!==r){var b=document.getElementById("btn-"+r);if(b){b.disabled=true;b.textContent=r+" · 已俾 "+lockedRoles[r]+" 鎖咗";b.style.opacity="0.35";}}}
+document.getElementById("lockInfo").textContent=keys.length>0?"已鎖："+keys.map(function(k){return k+"("+lockedRoles[k]+")";}).join("、"):"仲未有人揀，快啲搶！";
+}
+function goHome(){if(peer){try{peer.destroy();}catch(e){}}location.reload();}
+document.getElementById("btnHome").addEventListener("click",goHome);
+document.getElementById("btnHome2").addEventListener("click",goHome);
+document.getElementById("btnHome3").addEventListener("click",goHome);
+document.getElementById("btnHomeTop").addEventListener("click",goHome);
+document.getElementById("btnHomeTop2").addEventListener("click",goHome);
+document.getElementById("btnShowHost").addEventListener("click",function(){document.getElementById("hostBox").classList.remove("hidden");document.getElementById("joinBox").classList.add("hidden");});
+document.getElementById("btnShowJoin").addEventListener("click",function(){document.getElementById("joinBox").classList.remove("hidden");document.getElementById("hostBox").classList.add("hidden");});
+function makePeer(id){return new Peer(id,{host:"0.peerjs.com",port:443,secure:true,path:"/",debug:1,config:{iceServers:[{urls:"stun:stun.l.google.com:19302"}]}});}
+document.getElementById("btnCreate").addEventListener("click",function(){
+roomCode=document.getElementById("hostCode").value.trim();if(!/^[0-9]{4}$/.test(roomCode)){alert("打4位數");return;}
+isHost=true;myName="Host";roomId="PRINCESS-"+roomCode;culprit=suspects[Math.floor(Math.random()*suspects.length)];log("開房中...");
+peer=makePeer(roomId);
+peer.on("open",function(){document.getElementById("roomInfo").innerHTML="房開咗！房號係：<b>"+roomCode+"</b>";afterEnterRoom();});
+peer.on("error",function(e){if(e.type==="unavailable-id")log("呢個號有人用緊，轉個新號");else log("Peer失敗："+e.type);});
+peer.on("connection",function(conn){conns.push(conn);conn.on("data",function(d){onData(d,conn);});conn.on("open",function(){conn.send({type:"culprit",culprit:culprit});conn.send({type:"syncRoles",locked:lockedRoles});addChat("系統","有朋友入咗房");});});
+});
+document.getElementById("btnJoin").addEventListener("click",function(){
+roomCode=document.getElementById("roomInput").value.trim();if(!/^[0-9]{4}$/.test(roomCode)){alert("打Host嗰4位數");return;}
+myName="玩家"+Math.floor(100+Math.random()*900);roomId="PRINCESS-"+roomCode;log("入房中...");
+peer=makePeer();
+peer.on("open",function(){var conn=peer.connect(roomId,{reliable:true});conns.push(conn);conn.on("open",function(){document.getElementById("roomInfo").textContent="入咗房："+roomCode+"，你係 "+myName;afterEnterRoom();});conn.on("data",function(d){onData(d,conn);});});
+peer.on("error",function(e){log("入房失敗："+e.type);});
+});
+function onData(d,conn){
+if(d.type==="chat")addChat(d.who,d.msg);
+if(d.type==="clue")showClue(d.loc,d.clues,d.who);
+if(d.type==="culprit")culprit=d.culprit;
+if(d.type==="vote")addChat("系統",d.who+" 已鎖定指認");
+if(d.type==="truth")showTruth(d.culprit);
+if(d.type==="syncRoles"){lockedRoles=d.locked||{};applyLockedRoles();}
+if(d.type==="roleLocked"){
+// 如果我已經搶咗同一個角，但對方早過我，Host會之後Send roleFail 俾我，呢度唔好覆蓋自己
+if(lockedRoles[d.role] && lockedRoles[d.role]!==d.who && myRole===d.role){
+ // 我同人撞咗，等Host仲裁，唔好即刻改
+}else{lockedRoles[d.role]=d.who;}
+applyLockedRoles();
+}
+if(d.type==="yourRole"){showMyPrivateRole(d.role,d.data);}
+if(d.type==="yourRoleFor"){if(d.who===myName) showMyPrivateRole(d.role,d.data);}
+// Host做仲裁，但唔使批准，即刻批
+if(isHost&&d.type==="wantRole"){
+if(lockedRoles[d.role] && lockedRoles[d.role]!==d.who){
+conn.send({type:"roleFail",role:d.role,who:d.who});return;
+}
+lockedRoles[d.role]=d.who;broadcast({type:"roleLocked",role:d.role,who:d.who});
+broadcast({type:"yourRoleFor",role:d.role,who:d.who,data:roles[d.role]});
+applyLockedRoles();
+}
+if(d.type==="roleFail" && d.who===myName){
+alert(d.role+" 俾人快咗一步搶咗，揀過第二個！");
+revertMyRole();
+}
+}
+function revertMyRole(){
+var old=myRole;myRole="";document.getElementById("myRole").classList.add("hidden");
+hide("step3");hide("step4");hide("step5");
+var arr=["小福子","將軍","尚書","舞姬"];
+for(var i=0;i<arr.length;i++){var b=document.getElementById("btn-"+arr[i]);if(b&&!lockedRoles[arr[i]]){b.disabled=false;b.textContent=arr[i];b.style.opacity="1";}}
+document.getElementById("topMe").textContent="未揀角";
+}
+function requestRole(role){
+if(myRole)return;
+if(lockedRoles[role]){alert(role+" 已經俾人鎖咗");return;}
+// 1. 即刻喺自己部機鎖咗，唔等Host
+if(!myName) myName=isHost?"Host":"玩家"+Math.floor(100+Math.random()*900);
+myRole=role;
+lockedRoles[role]=myName;
+applyLockedRoles();
+showMyPrivateRole(role,roles[role]);
+addChat("系統","你已鎖定 "+role);
+// 2. 即刻Broadcast俾所有人睇到，唔經Host等
+broadcast({type:"roleLocked",role:role,who:myName});
+if(!isHost){
+// 再通知Host做紀錄，Host會幫手廣播俾遲入嚟嘅人，但唔會阻你
+var tries=0;var t=setInterval(function(){if(tries>3){clearInterval(t);return;}try{conns[0].send({type:"wantRole",role:role,who:myName});}catch(e){}tries++;},500);
+}else{
+// Host自己直接廣播
+broadcast({type:"roleLocked",role:role,who:myName});
+}
+}
+document.getElementById("btn-小福子").addEventListener("click",function(){requestRole("小福子");});
+document.getElementById("btn-將軍").addEventListener("click",function(){requestRole("將軍");});
+document.getElementById("btn-尚書").addEventListener("click",function(){requestRole("尚書");});
+document.getElementById("btn-舞姬").addEventListener("click",function(){requestRole("舞姬");});
+function showMyPrivateRole(role,data){
+myRole=role;document.getElementById("topMe").textContent=role;
+document.getElementById("myRole").classList.remove("hidden");
+document.getElementById("roleTitle").innerHTML=data.title;
+document.getElementById("storyIntro").textContent=storyIntro;
+document.getElementById("roleSeen").textContent=data.seen;
+document.getElementById("roleTimeline").innerHTML=data.timeline;
+document.getElementById("roleSecret").textContent=data.secret;
+show("step3");show("step4");show("step5");renderSuspects();
+var arr=["小福子","將軍","尚書","舞姬"];for(var i=0;i<arr.length;i++){var b=document.getElementById("btn-"+arr[i]);if(b){b.disabled=true;b.style.opacity="0.35";}}
+var mine=document.getElementById("btn-"+role);if(mine){mine.textContent=role+" · 你已鎖定";mine.style.opacity="1";mine.style.background="#d4af37";}
+}
+document.getElementById("btnSearch").addEventListener("click",function(){
+var v=document.getElementById("searchInput").value.trim().replace(/查/g,"").trim();
+if(!locations[v]){alert("冇呢個地方！");return;}
+var clues=locations[v].slice().sort(function(){return Math.random()-0.5;});
+showClue(v,clues,myName||"你");broadcast({type:"clue",loc:v,clues:clues,who:myName||"玩家"});
+document.getElementById("searchInput").value="";
+});
+function showClue(loc,clues,who){var html="<div class=card style=background:#1a1426><span class=tag>公共線索 · "+who+" 查 "+loc+"</span>";for(var i=0;i<clues.length;i++){html+="<div class=clue><b>"+(i+1)+".</b> "+clues[i]+"</div>";}html+="</div>";document.getElementById("clues").innerHTML+=html;}
+document.getElementById("btnChat").addEventListener("click",function(){var v=document.getElementById("chatInput").value.trim();if(!v)return;addChat(myName||"我",v);broadcast({type:"chat",who:myName||"玩家",msg:v});document.getElementById("chatInput").value="";});
+function renderSuspects(){var html="";for(var i=0;i<suspects.length;i++){html+="<div class=suspect id=sus-"+i+">"+suspects[i]+"</div>";}document.getElementById("suspects").innerHTML=html;for(var j=0;j<suspects.length;j++){(function(idx){document.getElementById("sus-"+idx).addEventListener("click",function(){var els=document.querySelectorAll(".suspect");for(var k=0;k<els.length;k++){els[k].classList.remove("sel");}this.classList.add("sel");myPick=suspects[idx];});})(j);}}
+var myPick="";
+document.getElementById("btnVote").addEventListener("click",function(){if(!myPick){alert("揀一個先");return;}document.getElementById("voteResult").textContent="你已鎖定："+myPick;broadcast({type:"vote",who:myName,pick:myPick});});
+document.getElementById("btnReveal").addEventListener("click",function(){if(!culprit){alert("未開房");return;}showTruth(culprit);broadcast({type:"truth",culprit:culprit});});
+function showTruth(c){var el=document.getElementById("truth");el.classList.remove("hidden");el.innerHTML="<h3>真相：兇手係 "+c+"</h3><p>公主冇死，唔想和親，匿咗喺冷宮。估中嘅贏！</p>";}
+</script>
+</body>
+</html>
