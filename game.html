@@ -15,7 +15,8 @@ button.sec{background:#333;color:#fff} button:disabled{background:#444;color:#88
 .char.sel{border-color:#ffcc00;background:#444} .char.god{border:1px dashed #b06bff;background:#2a004d}
 .char.locked{opacity:.45;cursor:not-allowed}
 .msg{background:#2a2520;padding:9px;border-radius:10px;margin:6px 0;font-size:15px}
-.msg b{color:#ffcc00} .roomBtn{background:#2e2a24;color:#fff} .roomBtn.done{background:#4a3a1a;color:#ffcc00}
+.msg b{color:#ffcc00} .msg.new{border:1px solid #ffcc00;background:#3a2f00}
+.roomBtn{background:#2e2a24;color:#fff} .roomBtn.done{background:#4a3a1a;color:#ffcc00}
 small{color:#bbb;line-height:1.5} .top{display:flex;gap:8px} .top button{flex:1} .voteBtn{background:#ff4444;color:#fff}
 .godPanel{background:#2a004d;padding:12px;border-radius:12px;margin-top:10px;border:1px solid #7a00ff}
 .hidden{display:none}
@@ -34,7 +35,7 @@ small{color:#bbb;line-height:1.5} .top{display:flex;gap:8px} .top button{flex:1}
 <div id="gameArea" class="hidden">
 <div class="card" style="background:#3a2415">
 <h2>🏠 阿爺金條唔見左</h2>
-<b>劇情：</b><br><small>阿爺返嚟，成屋亂哂, 夾萬打開，金條唔見，大門鎖冇壞。<br>全家人要搵出內鬼。<br><b>新玩法：同一間房，唔同人搜到唔同嘢！</b></small>
+<b>劇情：</b><br><small>阿爺返嚟，成屋亂哂, 夾萬打開，金條唔見，大門鎖冇壞。<br>全家人要搵出內鬼。<br><b>同一間房，唔同人搜到唔同嘢！搜屋最新置頂，Chatroom 向下發展</b></small>
 </div>
 
 <div id="godView" class="hidden card godPanel">
@@ -55,13 +56,13 @@ small{color:#bbb;line-height:1.5} .top{display:flex;gap:8px} .top button{flex:1}
 
 <div class="card hidden" id="searchArea">
 <h2>2. 搜屋 - 同一間房，唔同人搜到唔同嘢</h2>
-<small>你搜到嘅嘢只會顯示你搜到嗰個版本，唔好以為其他人搜到同你一樣</small>
+<small>最新搜到嘅線索會喺最頂，唔使碌落去搵</small>
 <div id="rooms"></div>
 <div id="foundClues"></div>
 </div>
 
 <div class="card hidden" id="chatArea">
-<h2>3. 線索 Chatroom</h2>
+<h2>3. 線索 Chatroom - 向下發展</h2>
 <div id="clueLog"></div>
 <input id="clueInput" placeholder="講嘢...">
 <button onclick="sendClue()">Send 講嘢</button>
@@ -132,13 +133,8 @@ const ROOMS={
   '👩 媽媽 - 真兇，你唔好穿煲': '地板濕晒，毛巾濕嘅，有人啱啱沖完涼。',
   '👧 女兒': '地板濕晒，毛巾濕嘅，有人啱啱沖完涼。',
   '🤵 女婿 - 背鍋王': '地板濕晒，毛巾濕嘅，有人啱啱沖完涼。'
-}
 };
-function getRoomClue(room, char){
-  let m=ROOMS[room];
-  if(!m) return '';
-  return m[char] || m['👨 爸爸'];
-}
+function getRoomClue(room, char){ let m=ROOMS[room]; if(!m) return ''; return m[char] || m['👨 爸爸']; }
 function showGame(){ joined=true; document.getElementById('gameArea').classList.remove('hidden'); }
 function hideGame(){
   joined=false; isLocked=false; myChar=''; isGod=false;
@@ -165,7 +161,6 @@ function renderGod(){
   let h='';
   for(let k in ROLES){ h+=`<div style="background:#1e1e1e;padding:10px;border-radius:10px;margin:6px 0"><b>${VOTE_LABELS[k]||k}</b><br><small>${ROLES[k]}</small><br><small style="color:#ffcc00">揀咗呢個角色嘅人：${Object.values(players).find(p=>p.char===k)?.name||'未有人揀'}</small></div>` }
   document.getElementById('godAll').innerHTML=h;
-  // 天眼睇晒所有人搜唔同房會搜到咩
   let rh='<b>👁️ 天眼專用：每間房 4 個人會搜到咩</b><br>';
   for(let room in ROOMS){
     rh+='<div style="margin-top:8px"><b>'+room+'</b><br>';
@@ -199,8 +194,8 @@ function renderRooms(){
   if(!joined) return;
   if(isGod){ document.getElementById('rooms').innerHTML=''; }
   else { document.getElementById('rooms').innerHTML=Object.keys(ROOMS).map(r=>`<button class="roomBtn ${clues.find(c=>c.text.includes(r) && c.name===myName)?'done':''}" onclick="searchRoom('${r}')">搜 ${r}</button>`).join(''); }
-  // 顯示方式：每個人只會見到自己搜到嗰個版本，但其他人搜到邊間房都會知（唔會知內容）
-  document.getElementById('foundClues').innerHTML=clues.filter(c=>c.isRoom).map(c=>`<div class="msg"><b>${c.name} 搜咗 ${c.room}：</b><br>${c.text}</div>`).join('');
+  let roomClues=clues.filter(c=>c.isRoom).slice().reverse();
+  document.getElementById('foundClues').innerHTML=roomClues.map((c,i)=>`<div class="msg ${i===0?'new':''}"><b>${c.name} 搜咗 ${c.room}：</b>${i===0?' <span style="color:#ffcc00;font-size:12px">★ 最新</span>':''}<br>${c.text}</div>`).join('');
 }
 function getPlayerNames(){ return Object.values(players).filter(p=>p.char && p.char!==GOD_CHAR && ROLES[p.char]).map(p=>p.name); }
 function updateRevealState(){
@@ -242,7 +237,6 @@ function sendToAll(d){ conns.forEach(c=>{try{c.send(d)}catch(e){}}); }
 function handleData(d, fromSelf){
   if(d.type==='char'){ players[d.name]={name:d.name,char:d.char}; renderChars(); if(isHost && !fromSelf) sendToAll(d); }
   if(d.type==='clue'){
-    // 用 room + name 做防重複，唔同人搜同一間房唔會當重複
     if(clues.find(x=>x.name===d.name && x.room===d.room && x.text===d.text)) return;
     clues.push(d); renderRooms(); renderClue(); if(isHost && !fromSelf) sendToAll(d);
   }
@@ -274,7 +268,6 @@ function pickChar(c){
 function searchRoom(r){
   if(isGod){ alert('你是天眼，唔可以搜屋'); return; }
   if(!isLocked){ alert('揀咗角色先可以搜屋'); return; }
-  // 唔同人可以搜同一間房，但同一個人唔可以搜同一間房 2 次
   if(clues.find(c=>c.name===myName && c.room===r)){ alert('你已經搜過呢間房啦，俾其他人搜下，睇下佢哋搜到咩唔同'); return; }
   let clueText=getRoomClue(r, myChar);
   let d={type:'clue', name:myName, text:clueText, room:r, isRoom:true};
