@@ -34,13 +34,14 @@ small{color:#bbb;line-height:1.5} .top{display:flex;gap:8px} .top button{flex:1}
 <div id="gameArea" class="hidden">
 <div class="card" style="background:#3a2415">
 <h2>🏠 阿爺金條唔見左</h2>
-<b>劇情：</b><br><small>阿爺返嚟，成屋亂哂, 夾萬打開，金條唔見，大門鎖冇壞。<br>全家人要搵出內鬼。</small>
+<b>劇情：</b><br><small>阿爺返嚟，成屋亂哂, 夾萬打開，金條唔見，大門鎖冇壞。<br>全家人要搵出內鬼。<br><b>新玩法：同一間房，唔同人搜到唔同嘢！</b></small>
 </div>
 
 <div id="godView" class="hidden card godPanel">
 <h2>👁️ 天眼 Mode - 得你一個睇到</h2>
 <small>你已鎖定天眼，轉唔返做玩家，除非 Refresh 重新入房。</small>
 <div id="godAll"></div>
+<div id="godRooms" style="background:#1a0033;padding:10px;border-radius:10px;margin-top:8px"></div>
 <div style="background:#5a1111;padding:10px;border-radius:10px;margin-top:8px"><b>🎬 真相：真兇係阿媽！</b><br><small>阿媽初戀阿強話做生意爭錢，阿媽心軟，趁大家出晒街，開咗夾萬，將金條攞咗俾阿強，仲扮屋企俾人爆格，點知阿爺識穿咗。女婿真係賭錢輸咗，但冇偷。</small></div>
 </div>
 
@@ -53,7 +54,8 @@ small{color:#bbb;line-height:1.5} .top{display:flex;gap:8px} .top button{flex:1}
 </div>
 
 <div class="card hidden" id="searchArea">
-<h2>2. 搜屋</h2>
+<h2>2. 搜屋 - 同一間房，唔同人搜到唔同嘢</h2>
+<small>你搜到嘅嘢只會顯示你搜到嗰個版本，唔好以為其他人搜到同你一樣</small>
 <div id="rooms"></div>
 <div id="foundClues"></div>
 </div>
@@ -84,7 +86,7 @@ const ROLES={
 '👨 爸爸': '你知夾萬密碼係阿爺生日。你最近發現老婆成日扮到隻雀咁出街，你問佢，佢話呢排多舊同學聚會唔可以樣衰。你心入面有少少懷疑，但你唔敢諗落去。你前一晚聽到阿女同老公響房度為錢問題嘈交,阿女仲打左老公一巴',
 '👩 媽媽 - 真兇，你唔好穿煲': '你嘅初戀「阿強」話做生意爭錢，問你借錢。你諗起後生嗰陣佢對你咁好，你心軟。嗰日你趁大家出哂街，偷偷開咗夾萬，將金條攞咗俾阿強, 仲扮屋企俾人爆格點知阿爺識穿左。你要一路扮無辜，一路推晒俾女婿。記住，死都唔好認。',
 '👧 女兒': '你老公最近賭錢輸咗好多，你成日同佢嗌交。你嗰日係同老公出左街睇戲既, 但中途老公話有公事要趕返公司。你要幫你老公自證清白，但你自己都唔肯定。',
-'🤵 女婿 - 背鍋王': '你真係賭錢輸咗一大筆，仲欠人錢，呢個係真嘅。但你冇偷地契同金條！你嗰晚真係去咗廁所，之後去咗樓下買煙，返嚟已經亂晒。你要死撐自己清白，唔係今晚你就做代罪羔羊。'
+'🤵 女婿 - 背鍋王': '你真係賭錢輸咗一大筆，仲欠人錢，呢個係真嘅。但你冇偷金條！你要死撐自己清白，唔係今晚你就做代罪羔羊。'
 };
 const VOTE_LABELS={
 '👨 爸爸':'爸爸',
@@ -93,15 +95,61 @@ const VOTE_LABELS={
 '🤵 女婿 - 背鍋王':'女婿'
 };
 const GOD_CHAR='👁️ 天眼 - 上帝視角 (只睇唔玩)';
+// 核心：同一間房，唔同角色搜到唔同線索
 const ROOMS={
-'🛏️ 阿爺房 - 夾萬喺呢度': '夾萬打開，有撬過痕跡。入面咩都無',
-'🛏️ 主人房 (爸爸媽媽)': '媽媽個抽屜入面，有張情信，信入面寫「多謝BB筆錢, MY LOVE」。下面仲有一張轉帳紀錄，金額係8萬。',
-'🛏️ 女兒房': '女兒部電腦仲開住，搜尋紀錄係「老公賭錢點算」、「賭錢輸咗點幫佢還」。',
-'📚 書房': '碎紙機入面有碎紙，拼返埋係一張賣金條既收據, 值10萬。',
-'🍳 廚房': '雪櫃有支啤酒，飲咗一半，係女婿飲開嗰隻。枱面有張馬會飛，女婿輸咗 $8萬。',
-'🚽 廁所': '地板濕晒，毛巾濕嘅，有人啱啱沖完涼。'
+'🛏️ 阿爺房 - 夾萬喺呢度': {
+  '👨 爸爸': '夾萬旁有隻髮夾。',
+  '👩 媽媽 - 真兇，你唔好穿煲': '夾萬打開，有撬過痕跡。入面咩都無。',
+  '👧 女兒': '間房有陣沐浴露氣味。',
+  '🤵 女婿 - 背鍋王': '夾萬打開，有撬過痕跡。入面咩都無。'
+},
+'🛏️ 主人房 (爸爸媽媽)': {
+  '👨 爸爸': '你喺媽媽個化妝枱搜到一條全新嘅金頸鏈，仲有張單，唔係你買㗎。',
+  '👩 媽媽 - 真兇，你唔好穿煲': '你喺爸爸個櫃桶底搜到 4萬私己錢，用個信封包住，收埋咗好耐。',
+  '👧 女兒': '你喺媽媽個抽屜搜到一張情信，信入面寫「多謝BB筆錢, MY LOVE」。',
+  '🤵 女婿 - 背鍋王': '你喺主人房個床頭櫃搜到一張轉帳紀錄，金額係10萬。'
+},
+'🛏️ 女兒房': {
+  '👨 爸爸': '你搜到女兒部電腦，搜尋紀錄係「老公賭錢點算」、「賭錢輸咗點幫佢還」。',
+  '👩 媽媽 - 真兇，你唔好穿煲': '你搜到女兒部電腦，搜尋紀錄係「老公賭錢點算」、「賭錢輸咗點幫佢還」。',
+  '👧 女兒': '你喺自己房搜到嗰日睇戲飛尾，嗰日你同老公真係出咗街睇戲。',
+  '🤵 女婿 - 背鍋王': '你搜到女兒部電腦，搜尋紀錄係「老公賭錢點算」、「賭錢輸咗點幫佢還」。'
+},
+'📚 書房': {
+  '👨 爸爸': '碎紙機入面有碎紙，拼返埋係一張借據，有人借左10萬。',
+  '👩 媽媽 - 真兇，你唔好穿煲': '碎紙機入面有碎紙，拼返埋係一張賣金條既收據，賣左10萬。',
+  '👧 女兒': '碎紙機入面有碎紙，拼返埋係一張賣金條既收據，賣左10萬。',
+  '🤵 女婿 - 背鍋王': '碎紙機入面有碎紙，拼返埋係一張借據，有人借左10萬。'
+},
+'🍳 廚房': {
+  '👨 爸爸': '枱面有張馬會飛，女婿輸咗 $10萬。',
+  '👩 媽媽 - 真兇，你唔好穿煲': '雪櫃有支啤酒，飲咗一半，係女婿飲開嗰隻。',
+  '👧 女兒': '枱面有張馬會飛，女婿輸咗 $10萬。',
+  '🤵 女婿 - 背鍋王': '雪櫃有支啤酒，飲咗一半，係女婿飲開嗰隻。'
+},
+'🚽 廁所': {
+  '👨 爸爸': '地板濕晒，毛巾濕嘅，有人啱啱沖完涼。',
+  '👩 媽媽 - 真兇，你唔好穿煲': '地板濕晒，毛巾濕嘅，有人啱啱沖完涼。',
+  '👧 女兒': '地板濕晒，毛巾濕嘅，有人啱啱沖完涼。',
+  '🤵 女婿 - 背鍋王': '地板濕晒，毛巾濕嘅，有人啱啱沖完涼。'
+}
 };
+function getRoomClue(room, char){
+  let m=ROOMS[room];
+  if(!m) return '';
+  return m[char] || m['👨 爸爸'];
+}
 function showGame(){ joined=true; document.getElementById('gameArea').classList.remove('hidden'); }
+function hideGame(){
+  joined=false; isLocked=false; myChar=''; isGod=false;
+  document.getElementById('gameArea').classList.add('hidden');
+  document.getElementById('godView').classList.add('hidden');
+  document.getElementById('searchArea').classList.add('hidden');
+  document.getElementById('chatArea').classList.add('hidden');
+  document.getElementById('voteArea').classList.add('hidden');
+  document.getElementById('mySecret').classList.add('hidden');
+  players={}; clues=[]; votes={}; conns=[];
+}
 function enterGod(){
   isGod=true;
   document.getElementById('godView').classList.remove('hidden');
@@ -117,6 +165,14 @@ function renderGod(){
   let h='';
   for(let k in ROLES){ h+=`<div style="background:#1e1e1e;padding:10px;border-radius:10px;margin:6px 0"><b>${VOTE_LABELS[k]||k}</b><br><small>${ROLES[k]}</small><br><small style="color:#ffcc00">揀咗呢個角色嘅人：${Object.values(players).find(p=>p.char===k)?.name||'未有人揀'}</small></div>` }
   document.getElementById('godAll').innerHTML=h;
+  // 天眼睇晒所有人搜唔同房會搜到咩
+  let rh='<b>👁️ 天眼專用：每間房 4 個人會搜到咩</b><br>';
+  for(let room in ROOMS){
+    rh+='<div style="margin-top:8px"><b>'+room+'</b><br>';
+    for(let k in ROLES){ rh+='<small>• '+VOTE_LABELS[k]+'搜到：'+ROOMS[room][k]+'</small><br>'; }
+    rh+='</div>';
+  }
+  document.getElementById('godRooms').innerHTML=rh;
 }
 function renderChars(){
   if(!joined) return;
@@ -142,42 +198,33 @@ function renderChars(){
 function renderRooms(){
   if(!joined) return;
   if(isGod){ document.getElementById('rooms').innerHTML=''; }
-  else { document.getElementById('rooms').innerHTML=Object.keys(ROOMS).map(r=>`<button class="roomBtn ${clues.find(c=>c.text.includes(r))?'done':''}" onclick="searchRoom('${r}')">搜 ${r}</button>`).join(''); }
-  document.getElementById('foundClues').innerHTML=clues.filter(c=>c.isRoom).map(c=>`<div class="msg"><b>${c.name} 搜到：</b><br>${c.text}</div>`).join('');
+  else { document.getElementById('rooms').innerHTML=Object.keys(ROOMS).map(r=>`<button class="roomBtn ${clues.find(c=>c.text.includes(r) && c.name===myName)?'done':''}" onclick="searchRoom('${r}')">搜 ${r}</button>`).join(''); }
+  // 顯示方式：每個人只會見到自己搜到嗰個版本，但其他人搜到邊間房都會知（唔會知內容）
+  document.getElementById('foundClues').innerHTML=clues.filter(c=>c.isRoom).map(c=>`<div class="msg"><b>${c.name} 搜咗 ${c.room}：</b><br>${c.text}</div>`).join('');
 }
-// 新功能：計票 + 控制開真相掣
-function getPlayerNames(){
-  // 淨係計 4 個真玩家，天眼唔計
-  return Object.values(players).filter(p=>p.char && p.char!==GOD_CHAR && ROLES[p.char]).map(p=>p.name);
-}
+function getPlayerNames(){ return Object.values(players).filter(p=>p.char && p.char!==GOD_CHAR && ROLES[p.char]).map(p=>p.name); }
 function updateRevealState(){
   let btn=document.getElementById('revealBtn');
   let hint=document.getElementById('revealHint');
   let tallyBox=document.getElementById('tallyBox');
   if(!btn) return;
   let playerNames=getPlayerNames();
-  // 未齊 4 個人，就唔好開閘住，等齊人先
   if(playerNames.length<4){
     btn.disabled=true; btn.innerText='🔒 公開真相 - 等齊 4 個人揀角先';
     hint.innerText='🔒 等齊 4 個玩家揀角，先可以開始投票同開真相';
-    tallyBox.classList.add('hidden');
-    return;
+    tallyBox.classList.add('hidden'); return;
   }
   let notVoted=playerNames.filter(n=>!votes[n]);
   if(notVoted.length>0){
     btn.disabled=true; btn.innerText='🔒 公開真相 - 要投晒票先撳得';
     hint.innerText='🔒 仲有 '+notVoted.length+' 個人未投票：'+notVoted.join('、')+'，投晒先可以開真相';
-    tallyBox.classList.add('hidden');
-    return;
+    tallyBox.classList.add('hidden'); return;
   }
-  // 全部投晒：出票數 + 開閘
-  let counts={};
-  Object.values(votes).forEach(v=>{ counts[v]=(counts[v]||0)+1; });
+  let counts={}; Object.values(votes).forEach(v=>{ counts[v]=(counts[v]||0)+1; });
   let sorted=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
   let html='<b>🗳️ 投票結果 - 已經投晒票：</b><br>';
   sorted.forEach(k=>{ html+='<div>• '+(VOTE_LABELS[k]||k)+'：'+counts[k]+' 票 '+(counts[k]===Math.max(...Object.values(counts))?' 👈 最多人投':'' )+'</div>'; });
-  let total=Object.keys(votes).length;
-  html+='<small>總票數：'+total+' / '+playerNames.length+'</small>';
+  html+='<small>總票數：'+Object.keys(votes).length+' / '+playerNames.length+'</small>';
   tallyBox.innerHTML=html; tallyBox.classList.remove('hidden');
   btn.disabled=false; btn.innerText='✅ 已經投晒票，出咗票數 - 撳呢度公開真相';
   hint.innerText='✅ 已經投晒票，票數喺上面，而家可以開真相啦！';
@@ -195,7 +242,8 @@ function sendToAll(d){ conns.forEach(c=>{try{c.send(d)}catch(e){}}); }
 function handleData(d, fromSelf){
   if(d.type==='char'){ players[d.name]={name:d.name,char:d.char}; renderChars(); if(isHost && !fromSelf) sendToAll(d); }
   if(d.type==='clue'){
-    if(clues.find(x=>x.name===d.name && x.text===d.text)) return;
+    // 用 room + name 做防重複，唔同人搜同一間房唔會當重複
+    if(clues.find(x=>x.name===d.name && x.room===d.room && x.text===d.text)) return;
     clues.push(d); renderRooms(); renderClue(); if(isHost && !fromSelf) sendToAll(d);
   }
   if(d.type==='vote'){ votes[d.name]=d.vote; renderClue(); if(isHost && !fromSelf) sendToAll(d); }
@@ -226,8 +274,10 @@ function pickChar(c){
 function searchRoom(r){
   if(isGod){ alert('你是天眼，唔可以搜屋'); return; }
   if(!isLocked){ alert('揀咗角色先可以搜屋'); return; }
-  if(clues.find(c=>c.text.includes(r))){ alert('呢間房已經搜過啦'); return; }
-  let d={type:'clue', name:myName, text:r+' - '+ROOMS[r], isRoom:true};
+  // 唔同人可以搜同一間房，但同一個人唔可以搜同一間房 2 次
+  if(clues.find(c=>c.name===myName && c.room===r)){ alert('你已經搜過呢間房啦，俾其他人搜下，睇下佢哋搜到咩唔同'); return; }
+  let clueText=getRoomClue(r, myChar);
+  let d={type:'clue', name:myName, text:clueText, room:r, isRoom:true};
   if(isHost){ clues.push(d); renderRooms(); renderClue(); sendToAll(d); }
   else { sendToAll(d); }
 }
@@ -250,7 +300,6 @@ function showTruth(){
   d.innerHTML='<b>🎬 真相大白：</b><br><br>真兇係 <b>阿媽</b>！阿媽初戀阿強話做生意爭錢，阿媽心軟，趁大家出晒街，開咗夾萬，將金條攞咗俾阿強，仲扮屋企俾人爆格，點知阿爺識穿咗。女婿真係賭錢輸咗，但冇偷嘢，大家屈錯人。';
 }
 function reveal(){
-  // 再加多重保險：未投晒，撳都唔俾開
   let playerNames=getPlayerNames();
   let notVoted=playerNames.filter(n=>!votes[n]);
   if(playerNames.length<4){ alert('未齊 4 個人，開唔到真相'); return; }
@@ -259,24 +308,25 @@ function reveal(){
 }
 function getInfo(){ myName=document.getElementById('myName').value.trim()||'家人'+Math.floor(Math.random()*99); myRoom=document.getElementById('room').value.trim()||'金條1126'; players[myName]={name:myName,char:myChar}; }
 function createRoom(){
-  getInfo(); isHost=true; document.getElementById('status').innerText='✅ 已開房! 房號: '+myRoom;
-  showGame();
-  peer=new Peer('gold3-'+myRoom);
-  peer.on('open',()=>{ document.getElementById('status').innerText='✅ 已開房! 房號: '+myRoom+' - 去揀角色'; });
+  getInfo(); isHost=true;
+  document.getElementById('status').innerText='開房中...';
+  if(peer){ try{peer.destroy();}catch(e){} }
+  peer=new Peer('gold5-'+myRoom);
+  peer.on('open',()=>{ document.getElementById('status').innerText='✅ 已開房! 房號: '+myRoom+' - 去揀角色'; showGame(); renderChars(); });
   peer.on('connection', conn=>{ conns.push(conn); conn.on('open',()=>sendSync(conn)); conn.on('data', d=>handleData(d,false)); });
-  peer.on('error',e=>{ document.getElementById('status').innerText='開房失敗，試下轉個房號'; });
-  renderChars();
+  peer.on('error',e=>{ document.getElementById('status').innerText='❌ 開房失敗！呢個房號可能已經有人用緊，轉個新房號再開過。'; hideGame(); alert('開房失敗，呢個房號已經有人用緊，轉個新房號再試'); });
 }
 function joinRoom(){
   getInfo(); isHost=false;
   document.getElementById('status').innerText='入房中...';
+  if(peer){ try{peer.destroy();}catch(e){} }
   peer=new Peer();
   peer.on('open',()=>{
-    let conn=peer.connect('gold3-'+myRoom, {reliable:true}); conns=[conn];
+    let conn=peer.connect('gold5-'+myRoom, {reliable:true}); conns=[conn];
     conn.on('open',()=>{ document.getElementById('status').innerText='✅ 已入房! 去揀角色'; showGame(); renderChars(); });
     conn.on('data', d=>handleData(d,false));
   });
-  peer.on('error',e=>{ document.getElementById('status').innerText='入唔到房，主持開咗房未?'; });
+  peer.on('error',e=>{ document.getElementById('status').innerText='❌ 入唔到房，主持開咗房未?'; hideGame(); });
 }
 </script>
 </body>
