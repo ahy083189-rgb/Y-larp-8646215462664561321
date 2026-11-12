@@ -2,210 +2,282 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>公主失蹤案</title>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>阿爺金條唔見左</title>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#14101a;color:#f5eeda;font-family:system-ui;padding:14px;line-height:1.7}
-.wrap{max-width:680px;margin:0 auto}h1{text-align:center}
-.card{background:#221b2e;border:1px solid #6b5a2a;border-radius:14px;padding:14px;margin-bottom:10px}
-.tag{display:inline-block;background:#d4af37;color:#1a1405;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700}
-.step{background:#d4af37;color:#000;padding:8px 12px;border-radius:10px;font-weight:700;margin-bottom:10px}
-.story{background:#1a1426;border:1px solid #444;border-radius:12px;padding:12px;margin:8px 0}
-.story h3{margin:4px 0;color:#d4af37}
-input{width:100%;padding:12px;border-radius:10px;border:1px solid #555;background:#1a1426;color:#fff;margin:6px 0;font-size:16px;text-align:center}
-button{border:0;border-radius:12px;padding:14px;font-weight:700;cursor:pointer;background:#f5eeda;width:100%;margin:4px 0;font-size:15px}
-button.gold{background:#d4af37}button:disabled{opacity:.35}
-button.outline{background:transparent;color:#f5eeda;border:1px solid #888}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.clue{border-left:3px solid #d4af37;padding-left:10px;margin:8px 0}
-#chat{height:160px;overflow-y:auto;background:#0f0b16;border-radius:10px;padding:10px}
-.small{font-size:12px;color:#aaa}.hidden{display:none}
-.suspect{border:1px solid #6b5a2a;border-radius:10px;padding:10px;text-align:center}
-.suspect.sel{background:#d4af37;color:#000}
-.top{position:sticky;top:0;background:#14101a;padding:8px 0;text-align:center;color:#d4af37}
-.timeline{border-left:3px solid #d4af37;padding-left:12px;margin:8px 0}
-.topbar{display:flex;gap:8px;align-items:center;justify-content:space-between}
-.topbar button{width:auto;padding:8px 12px;font-size:13px;margin:0}
+*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang HK",sans-serif;background:#14100c;color:#fff;padding:12px}
+h2{font-size:18px} input,button{font-size:16px;padding:11px;border-radius:10px;border:none;width:100%;margin:6px 0}
+input{background:#222;color:#fff} button{background:#ffcc00;font-weight:700;color:#000}
+button.sec{background:#333;color:#fff} button:disabled{background:#444;color:#888;cursor:not-allowed}
+.card{background:#221d18;padding:13px;border-radius:14px;margin:10px 0;border:1px solid #333}
+.char{padding:11px;margin:5px 0;border-radius:10px;background:#333;cursor:pointer;border:2px solid transparent}
+.char.sel{border-color:#ffcc00;background:#444} .char.god{border:1px dashed #b06bff;background:#2a004d}
+.char.locked{opacity:.45;cursor:not-allowed}
+.msg{background:#2a2520;padding:9px;border-radius:10px;margin:6px 0;font-size:15px}
+.msg b{color:#ffcc00} .roomBtn{background:#2e2a24;color:#fff} .roomBtn.done{background:#4a3a1a;color:#ffcc00}
+small{color:#bbb;line-height:1.5} .top{display:flex;gap:8px} .top button{flex:1} .voteBtn{background:#ff4444;color:#fff}
+.godPanel{background:#2a004d;padding:12px;border-radius:12px;margin-top:10px;border:1px solid #7a00ff}
+.hidden{display:none}
 </style>
 </head>
 <body>
-<div class="wrap">
-<div class="topbar"><button class="outline" id="btnHomeTop">← 返回主頁</button><span style="color:#d4af37;font-weight:700">公主失蹤案</span><button class="outline" id="btnHomeTop2">重開</button></div>
-<h1>公主失蹤案</h1>
-<div id="topBar" class="top hidden">房號：<b id="topRoom"></b> · 你係：<b id="topMe">未揀角</b></div>
-
-<div class="card" id="step0">
-<div class="step">第0步 · 你係邊個？</div>
-<button class="gold" id="btnShowHost">我是Host · 開新房</button>
-<button id="btnShowJoin">我是朋友 · 入房</button>
-<div id="hostBox" class="hidden"><p>諗一個4位數，例如 7391</p><input id="hostCode" placeholder="自訂4位數，例如 7391" maxlength="4"><button class="gold" id="btnCreate">開房！</button></div>
-<div id="joinBox" class="hidden"><p>問Host攞佢嗰4位數</p><input id="roomInput" placeholder="打Host嗰4位數" maxlength="4"><button class="gold" id="btnJoin">入房！</button></div>
-<p id="roomInfo" class="small"></p><p id="debug" class="small" style="color:#ff9a9a"></p>
-<button class="outline" id="btnHome">← 返回主頁 / 重開</button>
+<div class="card" id="loginCard">
+<h2>🏠 阿爺金條唔見左</h2>
+<small>入房後先會見到劇情，唔好偷睇</small>
+<input id="myName" placeholder="你個名，例如 阿女 / 導演">
+<input id="room" placeholder="房號，全部人打到一模一樣">
+<div class="top"><button onclick="createRoom()">我是主持 - 開房</button><button class="sec" onclick="joinRoom()">入房</button></div>
+<div id="status">未連線</div>
 </div>
 
-<div class="card hidden" id="step2">
-<div class="step">第1步 · 揀角 · 撳完即鎖，全場即刻見到</div>
-<div class="grid">
-<button id="btn-小福子">小福子</button>
-<button id="btn-將軍">將軍</button>
-<button id="btn-尚書">尚書</button>
-<button id="btn-舞姬">舞姬</button>
-</div>
-<p id="lockInfo" class="small"></p>
-<div id="myRole" class="card hidden" style="background:#1a1426;margin:0">
-<span class="tag">私密 · 淨係你睇到</span><h2 id="roleTitle"></h2>
-<div class="story"><h3>一 · 發生咩事？</h3><p id="storyIntro"></p></div>
-<div class="story"><h3>二 · 你嗰晚見到咩？</h3><p id="roleSeen"></p></div>
-<div class="story"><h3>三 · 你嘅時間線</h3><div class="timeline" id="roleTimeline"></div><p id="roleSecret" style="color:#d4af37;font-weight:700"></p></div>
-</div>
-<button class="outline" id="btnHome2">← 返回主頁</button>
+<div id="gameArea" class="hidden">
+<div class="card" style="background:#3a2415">
+<h2>🏠 阿爺金條唔見左</h2>
+<b>劇情：</b><br><small>阿爺返嚟，成屋亂哂, 夾萬打開，金條唔見，大門鎖冇壞。<br>全家人要搵出內鬼。</small>
 </div>
 
-<div class="card hidden" id="step3"><div class="step">第2步 · 查案</div><div style="display:flex;gap:8px"><input id="searchInput" placeholder="例如：查 涼亭" style="text-align:left"><button id="btnSearch" style="width:90px" class="gold">查！</button></div><p class="small">涼亭 / 假山 / 寢宮 / 門口 / 冷宮 / 御書房</p><div id="clues"></div></div>
-<div class="card hidden" id="step4"><div class="step">第3步 · 傾計</div><div id="chat"></div><div style="display:flex;gap:8px"><input id="chatInput" placeholder="講嘢..." style="text-align:left"><button id="btnChat" style="width:80px">Send</button></div></div>
-<div class="card hidden" id="step5"><div class="step">第4步 · 指兇手</div><div class="grid" id="suspects"></div><button class="gold" id="btnVote">鎖定指認</button><p id="voteResult" class="small"></p><button id="btnReveal">Host開真相</button><div id="truth" class="hidden"></div><button class="outline" id="btnHome3">← 返回主頁 · 玩多局</button></div>
+<div id="godView" class="hidden card godPanel">
+<h2>👁️ 天眼 Mode - 得你一個睇到</h2>
+<small>你已鎖定天眼，轉唔返做玩家，除非 Refresh 重新入房。</small>
+<div id="godAll"></div>
+<div style="background:#5a1111;padding:10px;border-radius:10px;margin-top:8px"><b>🎬 真相：真兇係阿媽！</b><br><small>阿媽初戀阿強話做生意爭錢，阿媽心軟，趁大家出晒街，開咗夾萬，將金條攞咗俾阿強，仲扮屋企俾人爆格，點知阿爺識穿咗。女婿真係賭錢輸咗，但冇偷。</small></div>
+</div>
+
+<div class="card" id="playArea">
+<h2>1. 揀角色 - 揀完即鎖死</h2>
+<div id="chars"></div>
+<div id="lockInfo" class="hidden" style="background:#004400;padding:10px;border-radius:10px;margin-top:8px">🔒 你已鎖定角色，Refresh 先可以轉角色</div>
+<div id="mySecret" class="hidden" style="background:#332200;padding:10px;border-radius:10px;margin-top:8px"></div>
+<div id="players"></div>
+</div>
+
+<div class="card hidden" id="searchArea">
+<h2>2. 搜屋</h2>
+<div id="rooms"></div>
+<div id="foundClues"></div>
+</div>
+
+<div class="card hidden" id="chatArea">
+<h2>3. 線索 Chatroom</h2>
+<div id="clueLog"></div>
+<input id="clueInput" placeholder="講嘢...">
+<button onclick="sendClue()">Send 講嘢</button>
+<small id="godHint" class="hidden" style="color:#c99aff">你是天眼，你嘅說話其他人會見到 👁️，但你唔會影響搜屋同投票。</small>
+</div>
+
+<div class="card hidden" id="voteArea">
+<h2>4. 投票捉內鬼</h2>
+<div id="votes"></div>
+<div id="voteResult"></div>
+<div id="tallyBox" class="hidden" style="background:#1a3a1a;padding:12px;border-radius:10px;margin:10px 0"></div>
+<div id="revealHint" style="color:#ffcc00;font-size:14px;margin:6px 0">🔒 未投晒票，仲未可以開真相</div>
+<button id="revealBtn" class="sec" onclick="reveal()" disabled>🔒 公開真相 - 要投晒票先撳得</button>
+<div id="truth" class="hidden" style="background:#5a1111;padding:12px;border-radius:10px;margin-top:10px"></div>
+</div>
 </div>
 
 <script>
-var peer=null, conns=[], isHost=false, roomId="", roomCode="", myRole="", myName="", culprit="", lockedRoles={};
-var suspects=["將軍","尚書","舞姬","宮女","嬤嬤","駙馬"];
-var storyIntro="今晚本來係宮入面最熱鬧嘅中秋夜，皇上喺御花園設宴，話要親自宣布公主嘅婚事。點知宴會去到一半，公主突然話頭痛，想返涼亭唞下，之後就再冇返過嚟。宮女去涼亭搵，只見到一隻斷咗嘅耳環同埋一杯仲暖嘅茶，人就唔見咗。皇上大怒，封晒成個御花園，限今晚之內要搵返公主，否則成晚當值嘅人全部要受罰。大家表面話幫手搵，其實人人都有嘢收收埋埋。";
-var roles={};
-roles["小福子"]={title:"小福子 · 貼身太監",seen:"你係跟咗公主十年嘅貼身太監，今晚你一直喺宴會隔離斟茶遞水，成晚都好留意公主嘅面色。你見到公主聽到皇上話要將佢嫁去遠方和親嗰陣，成個人即刻白晒，隻手震到連茶杯都拎唔穩。你仲見到尚書成晚喺皇上耳邊講嘢，舞姬又成晚喺門口跳舞，好似特登引開啲守衛。你心入面已經估到，公主今晚唔係俾人捉走，而係自己唔想嫁，搵機會走咗。但你唔敢講，因為你見到有人喺涼亭附近徘徊。",timeline:"19:00 見公主入御花園，面色好差<br>19:20 喺宴會斟茶，見到尚書同皇上密斟<br>19:30 聽到舞姬喺門口跳舞，守衛走晒去睇<br>20:00 送茶去涼亭，發現涼亭已經冇人",secret:"得你知：你見到尚書叫守衛走開，你唔敢講，驚俾人滅口。"};
-roles["將軍"]={title:"將軍 · 禁軍統領",seen:"你係今晚負責成個御花園安全嘅將軍，成晚都企喺偏殿門口，雙眼唔敢離開公主半步。你見到公主成晚都心不在焉，成日望住門口，好似諗緊點樣走。你仲見到舞姬喺門口跳舞跳到好誇張，啲守衛全部俾佢吸引晒，門口空晒。你心諗唔對路，即刻走過去想勸公主唔好做傻事，點知你去到門口嗰陣，公主已經唔見咗，只見到舞姬喺假山後面一閃而過，好似有啲嘢唔想俾你見到。",timeline:"19:10 喺偏殿等召見，守住門口<br>19:30 見到舞姬喺門口跳舞，守衛走晒<br>19:40 去門口想勸公主唔好走<br>19:45 見到舞姬喺假山後面閃過",secret:"得你知：你去門口係想勸公主，唔係捉佢，千祈唔好俾人屈你。"};
-roles["尚書"]={title:"尚書 · 禮部尚書",seen:"你係今日一手促成和親嘅禮部尚書，成晚都跟住皇上，負責宣布公主聽日就要嫁去遠方。你見到公主聽到消息之後，眼淚即刻湧出嚟，之後就話頭痛要去涼亭唞下。你心入面有啲內疚，因為你知道公主根本唔想嫁，但皇命難違。你仲記得，下午有個神秘人塞咗張紙俾你，叫你今晚一定要叫開門口嘅守衛，話係為咗公主好。你當時唔知咩事，照做咗，而家諗返先知自己可能俾人利用咗。",timeline:"19:15 送奏摺去御書房，見到和親聖旨<br>19:30 叫守衛去偏殿搬嘢，門口空咗一炷香<br>19:40 返到宴會，見到公主唔見咗<br>19:50 返到自己房，心神不寧",secret:"得你知：你叫開守衛，係有人叫你咁做，你唔知為咩，驚俾人當係同謀。"};
-roles["舞姬"]={title:"舞姬 · 西域舞姬",seen:"你係今晚俾人請嚟表演嘅西域舞姬，平時喺宮外賣藝，今晚突然有人俾咗你成袋銀兩，叫你今晚一定要喺門口跳舞跳到最勁，引開晒啲守衛。你本來諗住有錢收就照做，點知你跳舞嗰陣，見到公主喺涼亭嗰邊偷偷換咗套宮女衫，仲同一個宮女一齊向假山方向走去。你仲見到將軍向你呢邊行緊過嚟，你嚇到即刻閃去假山後面，唔敢出聲。你而家唔知自己係幫咗公主定害咗佢。",timeline:"19:00 收咗一袋銀兩，叫你喺門口跳舞<br>19:30 喺門口跳舞，守衛全部走晒嚟睇<br>19:38 見到公主換咗宮女衫，向假山走<br>19:40 閃去假山後面，避開將軍",secret:"得你知：你收錢跳舞，有人叫你引開守衛，你唔知嗰個人係邊個。"};
-var locations={};
-locations["涼亭"]=["茶杯仲暖，但冇藥，係公主自己飲剩嘅。","耳環斷口好整齊，似人用手整斷。","石櫈下面塞住紙仔：今晚戌時三刻，假山見"];
-locations["假山"]=["假山石有新刮痕，啱啱俾人推開過。","地下有兩個女仔腳印，一入冇出。","有個爛香囊，係舞姬成日戴嗰個款。"];
-locations["寢宮"]=["床頭櫃空咗，唔見咗小包袱。","衣櫃少咗一套宮女衫。","梳妝枱有信：唔好搵我，我要自己揀路"];
-locations["門口"]=["守衛話尚書叫佢哋去搬嘢，門口空咗一炷香。","地下有舞姬用開嘅香水味。","將軍話嚟勸公主，嚟到已經唔見人。"];
-locations["冷宮"]=["冷宮小屋張床仲暖，好似啱啱有人瞓過。","枱面有公主鍾意食嘅糕點。","門後面有個小包袱，同寢宮唔見咗嗰個一樣。"];
-locations["御書房"]=["御書房有張和親聖旨，公主聽日就要嫁去遠方。","聖旨下面壓住公主寫嘅不嫁兩個字。","尚書今日嚟過御書房，逗留咗好耐。"];
-function show(id){document.getElementById(id).classList.remove("hidden");}
-function hide(id){document.getElementById(id).classList.add("hidden");}
-function log(t){document.getElementById("debug").textContent=t;}
-function addChat(w,m){var c=document.getElementById("chat");if(!c)return;c.innerHTML=c.innerHTML+"<div><b>"+w+":</b> "+m+"</div>";c.scrollTop=c.scrollHeight;}
-function broadcast(o){for(var i=0;i<conns.length;i++){try{conns[i].send(o);}catch(e){}}}
-function afterEnterRoom(){hide("step0");show("step2");document.getElementById("topBar").classList.remove("hidden");document.getElementById("topRoom").textContent=roomCode;}
-function applyLockedRoles(){
-var keys=Object.keys(lockedRoles);
-for(var i=0;i<keys.length;i++){var r=keys[i];if(myRole!==r){var b=document.getElementById("btn-"+r);if(b){b.disabled=true;b.textContent=r+" · 已俾 "+lockedRoles[r]+" 鎖咗";b.style.opacity="0.35";}}}
-document.getElementById("lockInfo").textContent=keys.length>0?"已鎖："+keys.map(function(k){return k+"("+lockedRoles[k]+")";}).join("、"):"仲未有人揀，快啲搶！";
+let peer=null, conns=[], isHost=false, isGod=false, myName='', myRoom='', myChar='', isLocked=false, joined=false;
+let players={}, clues=[], votes={};
+const ROLES={
+'👨 爸爸': '你知夾萬密碼係阿爺生日。你最近發現老婆成日扮到隻雀咁出街，你問佢，佢話呢排多舊同學聚會唔可以樣衰。你心入面有少少懷疑，但你唔敢諗落去。你前一晚聽到阿女同老公響房度為錢問題嘈交,阿女仲打左老公一巴',
+'👩 媽媽 - 真兇，你唔好穿煲': '你嘅初戀「阿強」話做生意爭錢，問你借錢。你諗起後生嗰陣佢對你咁好，你心軟。嗰日你趁大家出哂街，偷偷開咗夾萬，將金條攞咗俾阿強, 仲扮屋企俾人爆格點知阿爺識穿左。你要一路扮無辜，一路推晒俾女婿。記住，死都唔好認。',
+'👧 女兒': '你老公最近賭錢輸咗好多，你成日同佢嗌交。你嗰日係同老公出左街睇戲既, 但中途老公話有公事要趕返公司。你要幫你老公自證清白，但你自己都唔肯定。',
+'🤵 女婿 - 背鍋王': '你真係賭錢輸咗一大筆，仲欠人錢，呢個係真嘅。但你冇偷地契同金條！你嗰晚真係去咗廁所，之後去咗樓下買煙，返嚟已經亂晒。你要死撐自己清白，唔係今晚你就做代罪羔羊。'
+};
+const VOTE_LABELS={
+'👨 爸爸':'爸爸',
+'👩 媽媽 - 真兇，你唔好穿煲':'媽媽',
+'👧 女兒':'女兒',
+'🤵 女婿 - 背鍋王':'女婿'
+};
+const GOD_CHAR='👁️ 天眼 - 上帝視角 (只睇唔玩)';
+const ROOMS={
+'🛏️ 阿爺房 - 夾萬喺呢度': '夾萬打開，有撬過痕跡。入面咩都無',
+'🛏️ 主人房 (爸爸媽媽)': '媽媽個抽屜入面，有張情信，信入面寫「多謝BB筆錢, MY LOVE」。下面仲有一張轉帳紀錄，金額係8萬。',
+'🛏️ 女兒房': '女兒部電腦仲開住，搜尋紀錄係「老公賭錢點算」、「賭錢輸咗點幫佢還」。',
+'📚 書房': '碎紙機入面有碎紙，拼返埋係一張賣金條既收據, 值10萬。',
+'🍳 廚房': '雪櫃有支啤酒，飲咗一半，係女婿飲開嗰隻。枱面有張馬會飛，女婿輸咗 $8萬。',
+'🚽 廁所': '地板濕晒，毛巾濕嘅，有人啱啱沖完涼。'
+};
+function showGame(){ joined=true; document.getElementById('gameArea').classList.remove('hidden'); }
+function enterGod(){
+  isGod=true;
+  document.getElementById('godView').classList.remove('hidden');
+  document.getElementById('godHint').classList.remove('hidden');
+  document.getElementById('searchArea').classList.add('hidden');
+  document.getElementById('mySecret').classList.add('hidden');
+  document.getElementById('chatArea').classList.remove('hidden');
+  document.getElementById('voteArea').classList.remove('hidden');
+  renderGod(); renderRooms(); renderClue();
 }
-function goHome(){if(peer){try{peer.destroy();}catch(e){}}location.reload();}
-document.getElementById("btnHome").addEventListener("click",goHome);
-document.getElementById("btnHome2").addEventListener("click",goHome);
-document.getElementById("btnHome3").addEventListener("click",goHome);
-document.getElementById("btnHomeTop").addEventListener("click",goHome);
-document.getElementById("btnHomeTop2").addEventListener("click",goHome);
-document.getElementById("btnShowHost").addEventListener("click",function(){document.getElementById("hostBox").classList.remove("hidden");document.getElementById("joinBox").classList.add("hidden");});
-document.getElementById("btnShowJoin").addEventListener("click",function(){document.getElementById("joinBox").classList.remove("hidden");document.getElementById("hostBox").classList.add("hidden");});
-function makePeer(id){return new Peer(id,{host:"0.peerjs.com",port:443,secure:true,path:"/",debug:1,config:{iceServers:[{urls:"stun:stun.l.google.com:19302"}]}});}
-document.getElementById("btnCreate").addEventListener("click",function(){
-roomCode=document.getElementById("hostCode").value.trim();if(!/^[0-9]{4}$/.test(roomCode)){alert("打4位數");return;}
-isHost=true;myName="Host";roomId="PRINCESS-"+roomCode;culprit=suspects[Math.floor(Math.random()*suspects.length)];log("開房中...");
-peer=makePeer(roomId);
-peer.on("open",function(){document.getElementById("roomInfo").innerHTML="房開咗！房號係：<b>"+roomCode+"</b>";afterEnterRoom();});
-peer.on("error",function(e){if(e.type==="unavailable-id")log("呢個號有人用緊，轉個新號");else log("Peer失敗："+e.type);});
-peer.on("connection",function(conn){conns.push(conn);conn.on("data",function(d){onData(d,conn);});conn.on("open",function(){conn.send({type:"culprit",culprit:culprit});conn.send({type:"syncRoles",locked:lockedRoles});addChat("系統","有朋友入咗房");});});
-});
-document.getElementById("btnJoin").addEventListener("click",function(){
-roomCode=document.getElementById("roomInput").value.trim();if(!/^[0-9]{4}$/.test(roomCode)){alert("打Host嗰4位數");return;}
-myName="玩家"+Math.floor(100+Math.random()*900);roomId="PRINCESS-"+roomCode;log("入房中...");
-peer=makePeer();
-peer.on("open",function(){var conn=peer.connect(roomId,{reliable:true});conns.push(conn);conn.on("open",function(){document.getElementById("roomInfo").textContent="入咗房："+roomCode+"，你係 "+myName;afterEnterRoom();});conn.on("data",function(d){onData(d,conn);});});
-peer.on("error",function(e){log("入房失敗："+e.type);});
-});
-function onData(d,conn){
-if(d.type==="chat")addChat(d.who,d.msg);
-if(d.type==="clue")showClue(d.loc,d.clues,d.who);
-if(d.type==="culprit")culprit=d.culprit;
-if(d.type==="vote")addChat("系統",d.who+" 已鎖定指認");
-if(d.type==="truth")showTruth(d.culprit);
-if(d.type==="syncRoles"){lockedRoles=d.locked||{};applyLockedRoles();}
-if(d.type==="roleLocked"){
-// 如果我已經搶咗同一個角，但對方早過我，Host會之後Send roleFail 俾我，呢度唔好覆蓋自己
-if(lockedRoles[d.role] && lockedRoles[d.role]!==d.who && myRole===d.role){
- // 我同人撞咗，等Host仲裁，唔好即刻改
-}else{lockedRoles[d.role]=d.who;}
-applyLockedRoles();
+function renderGod(){
+  if(!isGod) return;
+  let h='';
+  for(let k in ROLES){ h+=`<div style="background:#1e1e1e;padding:10px;border-radius:10px;margin:6px 0"><b>${VOTE_LABELS[k]||k}</b><br><small>${ROLES[k]}</small><br><small style="color:#ffcc00">揀咗呢個角色嘅人：${Object.values(players).find(p=>p.char===k)?.name||'未有人揀'}</small></div>` }
+  document.getElementById('godAll').innerHTML=h;
 }
-if(d.type==="yourRole"){showMyPrivateRole(d.role,d.data);}
-if(d.type==="yourRoleFor"){if(d.who===myName) showMyPrivateRole(d.role,d.data);}
-// Host做仲裁，但唔使批准，即刻批
-if(isHost&&d.type==="wantRole"){
-if(lockedRoles[d.role] && lockedRoles[d.role]!==d.who){
-conn.send({type:"roleFail",role:d.role,who:d.who});return;
+function renderChars(){
+  if(!joined) return;
+  renderGod();
+  let allChars=[...Object.keys(ROLES), GOD_CHAR];
+  const CHAR_LABELS={...VOTE_LABELS, [GOD_CHAR]:'👁️ 天眼'};
+  document.getElementById('chars').innerHTML=allChars.map(c=>{
+    let isGodChar=c===GOD_CHAR;
+    let taken=Object.values(players).find(p=>p.char===c && p.name!==myName);
+    let cls='char '+(isGodChar?'god ':'')+(myChar===c?'sel ':'')+(isLocked && myChar!==c?'locked':'')+(taken?'locked':'');
+    let label=CHAR_LABELS[c]||c;
+    return `<div class="${cls}" onclick="pickChar('${c}')">${label} ${taken?'- 已被 '+taken.name+' 揀咗':myChar===c?' - 你揀咗 (已鎖定 🔒)':isLocked?' - 已鎖定，轉唔到':''}</div>`
+  }).join('');
+  let h=''; for(let k in players) h+=`<div>• ${players[k].name} - ${VOTE_LABELS[players[k].char]||players[k].char||'未揀'}</div>`;
+  document.getElementById('players').innerHTML=h;
+  document.getElementById('lockInfo').classList.toggle('hidden', !isLocked);
+  if(isLocked && myChar && !isGod && ROLES[myChar]){
+    let d=document.getElementById('mySecret'); d.classList.remove('hidden');
+    d.innerHTML='<b>你是 '+VOTE_LABELS[myChar]+' 🔒 已鎖定</b><br><small>'+ROLES[myChar]+'<br><br>⚠️ 呢段淨係你自己見到，唔好讀出聲！</small>';
+  }
+  updateRevealState();
 }
-lockedRoles[d.role]=d.who;broadcast({type:"roleLocked",role:d.role,who:d.who});
-broadcast({type:"yourRoleFor",role:d.role,who:d.who,data:roles[d.role]});
-applyLockedRoles();
+function renderRooms(){
+  if(!joined) return;
+  if(isGod){ document.getElementById('rooms').innerHTML=''; }
+  else { document.getElementById('rooms').innerHTML=Object.keys(ROOMS).map(r=>`<button class="roomBtn ${clues.find(c=>c.text.includes(r))?'done':''}" onclick="searchRoom('${r}')">搜 ${r}</button>`).join(''); }
+  document.getElementById('foundClues').innerHTML=clues.filter(c=>c.isRoom).map(c=>`<div class="msg"><b>${c.name} 搜到：</b><br>${c.text}</div>`).join('');
 }
-if(d.type==="roleFail" && d.who===myName){
-alert(d.role+" 俾人快咗一步搶咗，揀過第二個！");
-revertMyRole();
+// 新功能：計票 + 控制開真相掣
+function getPlayerNames(){
+  // 淨係計 4 個真玩家，天眼唔計
+  return Object.values(players).filter(p=>p.char && p.char!==GOD_CHAR && ROLES[p.char]).map(p=>p.name);
 }
+function updateRevealState(){
+  let btn=document.getElementById('revealBtn');
+  let hint=document.getElementById('revealHint');
+  let tallyBox=document.getElementById('tallyBox');
+  if(!btn) return;
+  let playerNames=getPlayerNames();
+  // 未齊 4 個人，就唔好開閘住，等齊人先
+  if(playerNames.length<4){
+    btn.disabled=true; btn.innerText='🔒 公開真相 - 等齊 4 個人揀角先';
+    hint.innerText='🔒 等齊 4 個玩家揀角，先可以開始投票同開真相';
+    tallyBox.classList.add('hidden');
+    return;
+  }
+  let notVoted=playerNames.filter(n=>!votes[n]);
+  if(notVoted.length>0){
+    btn.disabled=true; btn.innerText='🔒 公開真相 - 要投晒票先撳得';
+    hint.innerText='🔒 仲有 '+notVoted.length+' 個人未投票：'+notVoted.join('、')+'，投晒先可以開真相';
+    tallyBox.classList.add('hidden');
+    return;
+  }
+  // 全部投晒：出票數 + 開閘
+  let counts={};
+  Object.values(votes).forEach(v=>{ counts[v]=(counts[v]||0)+1; });
+  let sorted=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]);
+  let html='<b>🗳️ 投票結果 - 已經投晒票：</b><br>';
+  sorted.forEach(k=>{ html+='<div>• '+(VOTE_LABELS[k]||k)+'：'+counts[k]+' 票 '+(counts[k]===Math.max(...Object.values(counts))?' 👈 最多人投':'' )+'</div>'; });
+  let total=Object.keys(votes).length;
+  html+='<small>總票數：'+total+' / '+playerNames.length+'</small>';
+  tallyBox.innerHTML=html; tallyBox.classList.remove('hidden');
+  btn.disabled=false; btn.innerText='✅ 已經投晒票，出咗票數 - 撳呢度公開真相';
+  hint.innerText='✅ 已經投晒票，票數喺上面，而家可以開真相啦！';
 }
-function revertMyRole(){
-var old=myRole;myRole="";document.getElementById("myRole").classList.add("hidden");
-hide("step3");hide("step4");hide("step5");
-var arr=["小福子","將軍","尚書","舞姬"];
-for(var i=0;i<arr.length;i++){var b=document.getElementById("btn-"+arr[i]);if(b&&!lockedRoles[arr[i]]){b.disabled=false;b.textContent=arr[i];b.style.opacity="1";}}
-document.getElementById("topMe").textContent="未揀角";
+function renderClue(){
+  if(!joined) return;
+  document.getElementById('clueLog').innerHTML=clues.filter(c=>!c.isRoom).map(c=>`<div class="msg"><b>${c.name}${c.isGod?' 👁️(天眼)':''}:</b> ${c.text}</div>`).join('');
+  if(isGod){ document.getElementById('votes').innerHTML='<small style="color:#c99aff">👁️ 你是天眼，你唔可以投票，淨係睇佢哋投邊個。</small>'; }
+  else { let vHtml=''; Object.keys(ROLES).forEach(r=>{ vHtml+=`<button class="voteBtn" onclick="vote('${r}')">我投 ${VOTE_LABELS[r]} 係內鬼</button>` }); document.getElementById('votes').innerHTML=vHtml; }
+  let vc=''; for(let k in votes) vc+=`<div>• ${k} 投咗 ${VOTE_LABELS[votes[k]]||votes[k]}</div>`;
+  document.getElementById('voteResult').innerHTML=vc;
+  updateRevealState();
 }
-function requestRole(role){
-if(myRole)return;
-if(lockedRoles[role]){alert(role+" 已經俾人鎖咗");return;}
-// 1. 即刻喺自己部機鎖咗，唔等Host
-if(!myName) myName=isHost?"Host":"玩家"+Math.floor(100+Math.random()*900);
-myRole=role;
-lockedRoles[role]=myName;
-applyLockedRoles();
-showMyPrivateRole(role,roles[role]);
-addChat("系統","你已鎖定 "+role);
-// 2. 即刻Broadcast俾所有人睇到，唔經Host等
-broadcast({type:"roleLocked",role:role,who:myName});
-if(!isHost){
-// 再通知Host做紀錄，Host會幫手廣播俾遲入嚟嘅人，但唔會阻你
-var tries=0;var t=setInterval(function(){if(tries>3){clearInterval(t);return;}try{conns[0].send({type:"wantRole",role:role,who:myName});}catch(e){}tries++;},500);
-}else{
-// Host自己直接廣播
-broadcast({type:"roleLocked",role:role,who:myName});
+function sendToAll(d){ conns.forEach(c=>{try{c.send(d)}catch(e){}}); }
+function handleData(d, fromSelf){
+  if(d.type==='char'){ players[d.name]={name:d.name,char:d.char}; renderChars(); if(isHost && !fromSelf) sendToAll(d); }
+  if(d.type==='clue'){
+    if(clues.find(x=>x.name===d.name && x.text===d.text)) return;
+    clues.push(d); renderRooms(); renderClue(); if(isHost && !fromSelf) sendToAll(d);
+  }
+  if(d.type==='vote'){ votes[d.name]=d.vote; renderClue(); if(isHost && !fromSelf) sendToAll(d); }
+  if(d.type==='reveal'){ showTruth(); if(isHost && !fromSelf) sendToAll(d); }
+  if(d.type==='god'){ players[d.name]={name:d.name+' 👁️(天眼)', char:GOD_CHAR}; renderChars(); if(isHost && !fromSelf) sendToAll(d); }
+  if(d.type==='sync'){ players=d.players; clues=d.clues; votes=d.votes; renderChars(); renderRooms(); renderClue(); }
 }
+function sendSync(conn){ conn.send({type:'sync', players, clues, votes}); }
+function pickChar(c){
+  if(!joined){ alert('開房 / 入房先，再揀角色'); return; }
+  if(isLocked){ alert('你已經鎖定咗，轉唔到角！'); return; }
+  if(Object.values(players).find(p=>p.char===c && p.name!==myName)){ alert('呢個角色俾人揀咗啦'); return; }
+  if(!confirm('你確定要做「'+(VOTE_LABELS[c]||c)+'」？\n撳確定之後就會鎖死，中途轉唔到角！')) return;
+  isLocked=true;
+  if(c===GOD_CHAR){
+    myChar=c; isGod=true; players[myName]={name:myName, char:c};
+    enterGod(); sendToAll({type:'god', name:myName});
+  } else {
+    myChar=c; isGod=false; players[myName]={name:myName,char:c};
+    document.getElementById('searchArea').classList.remove('hidden');
+    document.getElementById('chatArea').classList.remove('hidden');
+    document.getElementById('voteArea').classList.remove('hidden');
+    renderChars(); renderRooms(); renderClue();
+    sendToAll({type:'char', name:myName, char:c});
+  }
+  renderChars();
 }
-document.getElementById("btn-小福子").addEventListener("click",function(){requestRole("小福子");});
-document.getElementById("btn-將軍").addEventListener("click",function(){requestRole("將軍");});
-document.getElementById("btn-尚書").addEventListener("click",function(){requestRole("尚書");});
-document.getElementById("btn-舞姬").addEventListener("click",function(){requestRole("舞姬");});
-function showMyPrivateRole(role,data){
-myRole=role;document.getElementById("topMe").textContent=role;
-document.getElementById("myRole").classList.remove("hidden");
-document.getElementById("roleTitle").innerHTML=data.title;
-document.getElementById("storyIntro").textContent=storyIntro;
-document.getElementById("roleSeen").textContent=data.seen;
-document.getElementById("roleTimeline").innerHTML=data.timeline;
-document.getElementById("roleSecret").textContent=data.secret;
-show("step3");show("step4");show("step5");renderSuspects();
-var arr=["小福子","將軍","尚書","舞姬"];for(var i=0;i<arr.length;i++){var b=document.getElementById("btn-"+arr[i]);if(b){b.disabled=true;b.style.opacity="0.35";}}
-var mine=document.getElementById("btn-"+role);if(mine){mine.textContent=role+" · 你已鎖定";mine.style.opacity="1";mine.style.background="#d4af37";}
+function searchRoom(r){
+  if(isGod){ alert('你是天眼，唔可以搜屋'); return; }
+  if(!isLocked){ alert('揀咗角色先可以搜屋'); return; }
+  if(clues.find(c=>c.text.includes(r))){ alert('呢間房已經搜過啦'); return; }
+  let d={type:'clue', name:myName, text:r+' - '+ROOMS[r], isRoom:true};
+  if(isHost){ clues.push(d); renderRooms(); renderClue(); sendToAll(d); }
+  else { sendToAll(d); }
 }
-document.getElementById("btnSearch").addEventListener("click",function(){
-var v=document.getElementById("searchInput").value.trim().replace(/查/g,"").trim();
-if(!locations[v]){alert("冇呢個地方！");return;}
-var clues=locations[v].slice().sort(function(){return Math.random()-0.5;});
-showClue(v,clues,myName||"你");broadcast({type:"clue",loc:v,clues:clues,who:myName||"玩家"});
-document.getElementById("searchInput").value="";
-});
-function showClue(loc,clues,who){var html="<div class=card style=background:#1a1426><span class=tag>公共線索 · "+who+" 查 "+loc+"</span>";for(var i=0;i<clues.length;i++){html+="<div class=clue><b>"+(i+1)+".</b> "+clues[i]+"</div>";}html+="</div>";document.getElementById("clues").innerHTML+=html;}
-document.getElementById("btnChat").addEventListener("click",function(){var v=document.getElementById("chatInput").value.trim();if(!v)return;addChat(myName||"我",v);broadcast({type:"chat",who:myName||"玩家",msg:v});document.getElementById("chatInput").value="";});
-function renderSuspects(){var html="";for(var i=0;i<suspects.length;i++){html+="<div class=suspect id=sus-"+i+">"+suspects[i]+"</div>";}document.getElementById("suspects").innerHTML=html;for(var j=0;j<suspects.length;j++){(function(idx){document.getElementById("sus-"+idx).addEventListener("click",function(){var els=document.querySelectorAll(".suspect");for(var k=0;k<els.length;k++){els[k].classList.remove("sel");}this.classList.add("sel");myPick=suspects[idx];});})(j);}}
-var myPick="";
-document.getElementById("btnVote").addEventListener("click",function(){if(!myPick){alert("揀一個先");return;}document.getElementById("voteResult").textContent="你已鎖定："+myPick;broadcast({type:"vote",who:myName,pick:myPick});});
-document.getElementById("btnReveal").addEventListener("click",function(){if(!culprit){alert("未開房");return;}showTruth(culprit);broadcast({type:"truth",culprit:culprit});});
-function showTruth(c){var el=document.getElementById("truth");el.classList.remove("hidden");el.innerHTML="<h3>真相：兇手係 "+c+"</h3><p>公主冇死，唔想和親，匿咗喺冷宮。估中嘅贏！</p>";}
+function sendClue(){
+  let t=document.getElementById('clueInput').value.trim(); if(!t) return;
+  let d={type:'clue', name:myName, text:t, isRoom:false, isGod:isGod}; document.getElementById('clueInput').value='';
+  if(isHost){ clues.push(d); renderClue(); sendToAll(d); }
+  else { sendToAll(d); }
+}
+function vote(v){
+  if(isGod){ alert('你是天眼，唔可以投票'); return; }
+  if(!isLocked){ alert('揀咗角色先可以投票'); return; }
+  let d={type:'vote', name:myName, vote:v};
+  if(isHost){ votes[myName]=v; renderClue(); sendToAll(d); }
+  else { sendToAll(d); votes[myName]=v; renderClue(); }
+  alert('你投咗 '+(VOTE_LABELS[v]||v));
+}
+function showTruth(){
+  let d=document.getElementById('truth'); d.classList.remove('hidden');
+  d.innerHTML='<b>🎬 真相大白：</b><br><br>真兇係 <b>阿媽</b>！阿媽初戀阿強話做生意爭錢，阿媽心軟，趁大家出晒街，開咗夾萬，將金條攞咗俾阿強，仲扮屋企俾人爆格，點知阿爺識穿咗。女婿真係賭錢輸咗，但冇偷嘢，大家屈錯人。';
+}
+function reveal(){
+  // 再加多重保險：未投晒，撳都唔俾開
+  let playerNames=getPlayerNames();
+  let notVoted=playerNames.filter(n=>!votes[n]);
+  if(playerNames.length<4){ alert('未齊 4 個人，開唔到真相'); return; }
+  if(notVoted.length>0){ alert('仲有 '+notVoted.join('、')+' 未投票，投晒先可以開真相'); return; }
+  if(isHost){ showTruth(); sendToAll({type:'reveal'}); } else { sendToAll({type:'reveal'}); showTruth(); }
+}
+function getInfo(){ myName=document.getElementById('myName').value.trim()||'家人'+Math.floor(Math.random()*99); myRoom=document.getElementById('room').value.trim()||'金條1126'; players[myName]={name:myName,char:myChar}; }
+function createRoom(){
+  getInfo(); isHost=true; document.getElementById('status').innerText='✅ 已開房! 房號: '+myRoom;
+  showGame();
+  peer=new Peer('gold3-'+myRoom);
+  peer.on('open',()=>{ document.getElementById('status').innerText='✅ 已開房! 房號: '+myRoom+' - 去揀角色'; });
+  peer.on('connection', conn=>{ conns.push(conn); conn.on('open',()=>sendSync(conn)); conn.on('data', d=>handleData(d,false)); });
+  peer.on('error',e=>{ document.getElementById('status').innerText='開房失敗，試下轉個房號'; });
+  renderChars();
+}
+function joinRoom(){
+  getInfo(); isHost=false;
+  document.getElementById('status').innerText='入房中...';
+  peer=new Peer();
+  peer.on('open',()=>{
+    let conn=peer.connect('gold3-'+myRoom, {reliable:true}); conns=[conn];
+    conn.on('open',()=>{ document.getElementById('status').innerText='✅ 已入房! 去揀角色'; showGame(); renderChars(); });
+    conn.on('data', d=>handleData(d,false));
+  });
+  peer.on('error',e=>{ document.getElementById('status').innerText='入唔到房，主持開咗房未?'; });
+}
 </script>
 </body>
 </html>
